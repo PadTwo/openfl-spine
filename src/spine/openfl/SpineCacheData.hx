@@ -52,6 +52,11 @@ class SpineCacheFrameData {
 	public var allTrianglesColor:Array<Float>;
 
 	/**
+	 * 深色颜色运算
+	 */
+	public var allTrianglesDarkColor:Array<Float>;
+
+	/**
 	 * 顶点坐标
 	 */
 	public var allVerticesArray:Vector<Float>;

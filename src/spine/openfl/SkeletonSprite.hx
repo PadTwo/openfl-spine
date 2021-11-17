@@ -162,6 +162,8 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 	 */
 	private var allTrianglesColor:Array<Float> = [];
 
+	private var allTrianglesDarkColor:Array<Float> = [];
+
 	/**
 	 * 所有UV数据
 	 */
@@ -379,6 +381,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 		var oldTrianglesAlpha = this.allTrianglesAlpha;
 		var oldTrianglesBlendMode = this.allTrianglesBlendMode;
 		var oldTrianglesColor = this.allTrianglesColor;
+		var oldTrianglesDarkColor = this.allTrianglesDarkColor;
 		var oldUvs = this.allUvs;
 		var oldVerticesArray = this.allVerticesArray;
 
@@ -386,6 +389,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 		this.allTrianglesAlpha = data.allTrianglesAlpha;
 		this.allTrianglesBlendMode = data.allTrianglesBlendMode;
 		this.allTrianglesColor = data.allTrianglesColor;
+		this.allTrianglesDarkColor = data.allTrianglesDarkColor;
 		this.allUvs = data.allUvs;
 		this.allVerticesArray = data.allVerticesArray;
 
@@ -395,6 +399,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 		this.allTrianglesAlpha = oldTrianglesAlpha;
 		this.allTrianglesBlendMode = oldTrianglesBlendMode;
 		this.allTrianglesColor = oldTrianglesColor;
+		this.allTrianglesDarkColor = oldTrianglesDarkColor;
 		this.allUvs = oldUvs;
 		this.allVerticesArray = oldVerticesArray;
 	}
@@ -517,7 +522,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 					} else {
 						bitmapData = cast atlasRegion.page.rendererObject;
 					}
-					
+
 					// 如果是可以填充
 					if (isFill) {
 						if (_spritePool == null)
@@ -528,6 +533,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 						allTriangles = new Vector();
 						allTrianglesAlpha = [];
 						allTrianglesColor = [];
+						allTrianglesDarkColor = [];
 						allVerticesArray = new Vector();
 						allUvs = new Vector();
 						t = 0;
@@ -545,6 +551,14 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 						allTriangles[_buffdataPoint] = writeTriangles[vi] + t;
 						// 添加顶点属性
 						allTrianglesAlpha[_buffdataPoint] = slot.color.a * @:privateAccess this.__worldAlpha; // Alpha
+
+						var tempLightColor = slot.color;
+						var tempDarkColor = new Color(0, 0, 0, 1);
+						if (slot.data.darkColor != null) {
+							tempDarkColor = slot.darkColor;
+							isBitmapBlendMode = true;
+						}
+
 						switch (slot.data.blendMode) {
 							case BlendMode.additive:
 								allTrianglesBlendMode[_buffdataPoint] = 1;
@@ -555,11 +569,17 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 							case BlendMode.normal:
 								allTrianglesBlendMode[_buffdataPoint] = 0;
 						}
-						allTrianglesColor[_buffdataPoint * 4] = (slot.color.r);
-						allTrianglesColor[_buffdataPoint * 4 + 1] = (slot.color.g);
-						allTrianglesColor[_buffdataPoint * 4 + 2] = (slot.color.b);
+
+						allTrianglesDarkColor[_buffdataPoint * 4] = tempDarkColor.r;
+						allTrianglesDarkColor[_buffdataPoint * 4 + 1] = tempDarkColor.g;
+						allTrianglesDarkColor[_buffdataPoint * 4 + 2] = tempDarkColor.b;
+						allTrianglesDarkColor[_buffdataPoint * 4 + 3] = 0;
+
+						allTrianglesColor[_buffdataPoint * 4] = tempLightColor.r;
+						allTrianglesColor[_buffdataPoint * 4 + 1] = tempLightColor.g;
+						allTrianglesColor[_buffdataPoint * 4 + 2] = tempLightColor.b;
 						allTrianglesColor[_buffdataPoint * 4 + 3] = 0;
-						// allTrianglesColor[_buffdataPoint * 4 + 3] = (1);
+
 						_buffdataPoint++;
 					}
 
@@ -579,6 +599,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 						allTriangles = new Vector();
 						allTrianglesAlpha = [];
 						allTrianglesColor = [];
+						allTrianglesDarkColor = [];
 						allVerticesArray = new Vector();
 						allUvs = new Vector();
 						t = 0;
@@ -589,9 +610,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 					}
 				}
 				clipper.clipEndWithSlot(slot);
-			}
-			else if (slot != null && clipper.isClipping())
-			{
+			} else if (slot != null && clipper.isClipping()) {
 				clipper.clipEndWithSlot(slot);
 			}
 		}
@@ -618,6 +637,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 				frame.allTrianglesAlpha = allTrianglesAlpha.copy();
 				frame.allTrianglesBlendMode = allTrianglesBlendMode.copy();
 				frame.allTrianglesColor = allTrianglesColor.copy();
+				frame.allTrianglesDarkColor = allTrianglesDarkColor.copy();
 				datas.addFrame(actionName, frameid, frame);
 			}
 		}
@@ -633,7 +653,8 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 		if (slot != null && isBlendMode) {
 			switch (slot.data.blendMode) {
 				case BlendMode.additive:
-				// 内置Shader支持
+					// 内置Shader支持
+					spr.blendMode = openfl.display.BlendMode.ADD;
 				case BlendMode.multiply:
 					spr.blendMode = openfl.display.BlendMode.MULTIPLY;
 				case BlendMode.screen:
@@ -668,6 +689,7 @@ class SkeletonSprite extends #if !zygame Sprite #else DisplayObjectContainer #en
 		_shader.a_texalpha.value = allTrianglesAlpha;
 		_shader.a_texblendmode.value = allTrianglesBlendMode;
 		_shader.a_texcolor.value = allTrianglesColor;
+		_shader.a_darkcolor.value = allTrianglesDarkColor;
 		spr.graphics.beginShaderFill(_shader);
 		spr.graphics.drawTriangles(allVerticesArray, allTriangles, allUvs, TriangleCulling.NONE);
 		spr.graphics.endFill();
